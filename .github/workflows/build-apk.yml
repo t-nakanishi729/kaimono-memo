@@ -1,0 +1,39 @@
+name: APKをビルド
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Web版の画面をアプリにも使う
+        run: cp docs/index.html app/src/main/assets/index.html
+
+      - name: ビルド
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk kaimono-memo.apk
+
+      - name: ダウンロードページに置く
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: かいものメモ v${{ github.run_number }}
+          make_latest: true
+          files: kaimono-memo.apk
