@@ -1,5 +1,5 @@
 // 店内で電波がなくても開けるように、画面のファイルを端末に保存しておく
-const CACHE = "kaimono-v1";
+const CACHE = "kaimono-v2";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => {

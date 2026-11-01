@@ -48,6 +48,7 @@ li.done .name{color:var(--done);text-decoration:line-through}
 
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-size:.95rem;padding:8px 14px;border-radius:999px;cursor:pointer}
+.chip-more{border-style:dashed;color:var(--accent);font-weight:700}
 .chip:active{background:var(--accent);color:var(--accent-ink)}
 .clear{align-self:flex-start;border:0;background:none;color:var(--danger);font:inherit;font-size:.95rem;padding:6px 0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 
@@ -101,7 +102,7 @@ body{margin:0}
 </div>
 
 <script>
-const QUICK=["牛乳","たまご","食パン","豆腐","納豆","バナナ","お米","トイレットペーパー"];
+const QUICK=["コーヒー","牛乳","たまご","食パン","ヨーグルト","バター"];
 const CHECK='<svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.2 3L13 4.5" stroke="var(--accent-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 let items=[];           // {id,name,done,createdAt}
 let confirming=false;
@@ -152,6 +153,8 @@ function render(){
   const ch=document.getElementById("chips");ch.innerHTML="";
   const have=new Set(todo.map(i=>i.name));
   QUICK.filter(q=>!have.has(q)).forEach(q=>{const c=document.createElement("button");c.className="chip";c.type="button";c.textContent="＋ "+q;c.onclick=()=>add(q);ch.appendChild(c)});
+  const more=document.createElement("button");more.className="chip chip-more";more.type="button";more.textContent="＋ 追加";
+  more.onclick=()=>{const i=document.getElementById("itemInput");i.focus();i.scrollIntoView({block:"nearest"})};ch.appendChild(more);
 }
 
 function add(name){
