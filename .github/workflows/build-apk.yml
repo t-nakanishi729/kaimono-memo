@@ -19,8 +19,6 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
-
       - name: Web版の画面をアプリにも使う
         run: cp docs/index.html app/src/main/assets/index.html
 
