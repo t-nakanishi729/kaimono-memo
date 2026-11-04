@@ -49,6 +49,15 @@ li.done .name{color:var(--done);text-decoration:line-through}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-size:.95rem;padding:8px 14px;border-radius:999px;cursor:pointer}
 .chip-more{border-style:dashed;color:var(--accent);font-weight:700}
+.fav{display:inline-flex;border:1px solid var(--line);background:var(--surface);border-radius:999px;overflow:hidden}
+.fav .chip{border:0;border-radius:0;padding-right:8px}
+.fav .fav-del{border:0;background:none;color:var(--muted);font:inherit;font-size:1.05rem;padding:0 12px 0 6px;cursor:pointer}
+.fav .fav-del:active{color:var(--danger)}
+.fav-form{display:flex;flex-wrap:wrap;gap:8px;width:100%;align-items:center}
+.fav-form input{flex:1 1 160px;font-size:1rem;padding:10px 14px}
+.fav-form button{font:inherit;font-size:.95rem;padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.fav-form .ok{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.fav-note{width:100%;font-size:.85rem;color:var(--danger);margin:0}
 .chip:active{background:var(--accent);color:var(--accent-ink)}
 .clear{align-self:flex-start;border:0;background:none;color:var(--danger);font:inherit;font-size:.95rem;padding:6px 0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 
@@ -107,9 +116,14 @@ const CHECK='<svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.2 3L13 4.5" 
 let items=[];           // {id,name,done,createdAt}
 let confirming=false;
 const LS="kaimono-items";
+const LS_FAV="kaimono-favs";  // 自分で足した「よく買うもの」
+let favs=[];
+let favEditing=false, favNote="";
 
 function loadLocal(){try{items=JSON.parse(localStorage.getItem(LS)||"[]")}catch(e){items=[]}}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(items))}catch(e){}}
+function loadFavs(){try{favs=JSON.parse(localStorage.getItem(LS_FAV)||"[]")}catch(e){favs=[]}}
+function saveFavs(){try{localStorage.setItem(LS_FAV,JSON.stringify(favs))}catch(e){}}
 const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 function row(it){
@@ -152,9 +166,26 @@ function render(){
   }
   const ch=document.getElementById("chips");ch.innerHTML="";
   const have=new Set(todo.map(i=>i.name));
-  QUICK.filter(q=>!have.has(q)).forEach(q=>{const c=document.createElement("button");c.className="chip";c.type="button";c.textContent="＋ "+q;c.onclick=()=>add(q);ch.appendChild(c)});
-  const more=document.createElement("button");more.className="chip chip-more";more.type="button";more.textContent="＋ 追加";
-  more.onclick=()=>{const i=document.getElementById("itemInput");i.focus();i.scrollIntoView({block:"nearest"})};ch.appendChild(more);
+  const chip=q=>{const c=document.createElement("button");c.className="chip";c.type="button";c.textContent="＋ "+q;c.onclick=()=>add(q);return c};
+  QUICK.filter(q=>!have.has(q)).forEach(q=>ch.appendChild(chip(q)));
+  favs.filter(q=>!have.has(q)).forEach(q=>{
+    const w=document.createElement("span");w.className="fav";
+    const x=document.createElement("button");x.className="fav-del";x.type="button";x.textContent="×";
+    x.setAttribute("aria-label",q+"をよく買うものから外す");x.onclick=()=>removeFav(q);
+    w.append(chip(q),x);ch.appendChild(w);
+  });
+  if(favEditing){
+    const f=document.createElement("form");f.className="fav-form";f.autocomplete="off";
+    f.innerHTML='<input id="favInput" type="text" placeholder="よく買うものの名前" aria-label="よく買うものの名前" enterkeyhint="done"><button class="ok" type="submit">登録</button><button type="button" class="cancel">やめる</button>';
+    if(favNote){const n=document.createElement("p");n.className="fav-note";n.textContent=favNote;f.appendChild(n)}
+    f.onsubmit=e=>{e.preventDefault();addFav(f.querySelector("input").value)};
+    f.querySelector(".cancel").onclick=()=>{favEditing=false;favNote="";render()};
+    ch.appendChild(f);
+    setTimeout(()=>{const i=document.getElementById("favInput");if(i)i.focus()},0);
+  }else{
+    const more=document.createElement("button");more.className="chip chip-more";more.type="button";more.textContent="＋ 追加";
+    more.onclick=()=>{favEditing=true;favNote="";render()};ch.appendChild(more);
+  }
 }
 
 function add(name){
@@ -166,13 +197,20 @@ function add(name){
 }
 function toggle(it){ it.done=!it.done; saveLocal(); render(); }
 function remove(it){ items=items.filter(i=>i!==it); saveLocal(); render(); }
+function addFav(name){
+  name=name.trim();
+  if(!name){favNote="名前を入力してください。";render();return}
+  if(QUICK.includes(name)||favs.includes(name)){favNote="「"+name+"」はもう登録されています。";render();return}
+  favs.push(name);saveFavs();favEditing=false;favNote="";render();
+}
+function removeFav(name){ favs=favs.filter(f=>f!==name); saveFavs(); render(); }
 function clearDone(){ items=items.filter(i=>!i.done); confirming=false; saveLocal(); render(); }
 
 document.getElementById("form").addEventListener("submit",e=>{
   e.preventDefault();const inp=document.getElementById("itemInput");add(inp.value);inp.value="";inp.focus();
 });
 
-loadLocal();render();
+loadLocal();loadFavs();render();
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 
 </script>
